@@ -37,7 +37,7 @@ npm install --save purejwt
 - Automatic algorithm detection based on the provided keys.
 - Control over token expiration.
 - Flexibility in setting acceptable issuers and audiences for token verification.
-- A custom error type, PureJWT.PureJWTError, for precise error handling.
+- A custom error type, `PureJWT.PureJWTError`, for precise error handling.
 
 ## Quick Start Guide
 
@@ -128,18 +128,6 @@ console.log(`PUBLIC_KEY="${publicKey}"`);
   - With the **'ec'** algorithm, **options.namedCurve** values of **'prime256v1'**, **'secp384r1'**, and **'secp521r1'** match **ES256**, **ES384**, and **ES512** respectively.
 - **PureJWT.extractJwtFromBearer(tokenWithPrefix)**: Retrieves the JWT token from a bearer, basic, or digest authentication scheme.
 - **PureJWTError**: A unique error class featuring a message and statusCode.
-
-## Error handling
-
-PureJWT introduces a custom error type, `PureJWT.PureJWTError`, for more precise error handling in your applications. It includes a message and statusCode:
-
-```javascript
-{
-  statusCode: 401,
-  message: 'Token signature is invalid',
-  original_error: Error
-}
-```
 
 ## Example
 

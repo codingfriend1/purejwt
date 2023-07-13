@@ -199,6 +199,16 @@ app.get("/api/orders", jwt.getTokenPayload("token"), async (req, res) => {
 
 Contributions are always welcome! Please review the Contributing guidelines.
 
+## Disclaimer
+
+This library, herein referred to as "this Software", is provided "as is", without any warranty of any kind, expressed or implied. The author(s) and maintainer(s) of this Software do not provide any guarantee as to its functionality, correctness, or suitability for any specific purpose.
+
+Users of this Software are solely responsible for determining the appropriateness of its use, and assume all risks associated with its use, including but not limited to the risks of program errors, damage to or loss of data, programs or equipment, and unavailability or interruption of operations.
+
+The author(s) and maintainer(s) of this Software will not be liable for any direct, indirect, consequential, incidental, special, punitive or other damages whatsoever, including without limitation, damages for loss of business profits, business interruption, loss of business information, or other pecuniary loss, arising out of the use or inability to use this Software, even if advised of the possibility of such damages.
+
+By using this Software, you acknowledge and agree to this disclaimer and assume full responsibility for all risk associated with the use of this Software.
+
 ## License
 
 MIT License

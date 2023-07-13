@@ -17,7 +17,7 @@ class PureJWT {
     this.acceptableIssuers = acceptableIssuers
     this.acceptableAudiences = acceptableAudiences
     this.durationInMinutes = durationInMinutes
-    this.algorithm = algorithm || (this.#secret !== undefined && 'HS256') || PureJWT.#inferAlgorithmFromKey(this.#privateKey) 
+    this.algorithm = algorithm || (this.#secret !== undefined && 'HS256') || PureJWT.inferAlgorithmFromKey(this.#privateKey) 
     this.sigAlg = PureJWT.SUPPORTED_ALGORITHMS[this.algorithm]
 
     // Verify the given algorithm and keys
@@ -53,9 +53,14 @@ class PureJWT {
    * @param {string} options.namedCurve - The name of the curve to use
    * @return {Object} The private and public keys
    */
-  static generatePublicPrivateKeys({ algorithm = 'rsa', modulusLength = 2048, namedCurve = 'secp256k1' } = {}) {
+  static generatePublicPrivateKeys(algorithm = 'rsa', options = {}) {
     try {
-      const { privateKey, publicKey } = crypto.generateKeyPairSync(algorithm, { modulusLength, namedCurve })
+
+      if(algorithm === 'rsa') options.modulusLength = options.modulusLength || 2048
+      if(algorithm === 'ec') options.namedCurve = options.namedCurve || 'prime256v1'
+
+      const { privateKey, publicKey } = crypto.generateKeyPairSync(algorithm, options)
+    
       return {
         privateKey: privateKey.export({ type: 'pkcs8', format: 'pem' }),
         publicKey: publicKey.export({ type: 'spki', format: 'pem' })
@@ -140,7 +145,7 @@ class PureJWT {
    * @param {string} pemKey - Key from which to infer the algorithm
    * @return {string} Inferred algorithm
    */
-  static #inferAlgorithmFromKey(pemKey) {
+  static inferAlgorithmFromKey(pemKey) {
     try {
 
       const keyObject = crypto.createPublicKey(pemKey)

@@ -157,9 +157,19 @@ describe(`PureJWT Core Functionality`, function() {
     assert.isString(publicKey)
   })
 
+  // Test 9: Can we generate public and private keys
+  it('should generate a pair of RSA keys with settings applied', function() {
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', { modulusLength: 3072 })
+    const algorithm = PureJWT.inferAlgorithmFromKey(privateKey)
+
+    assert.isString(privateKey)
+    assert.isString(publicKey)
+    assert.equal(algorithm, 'RS384')
+  })
+
   it('should not generate keys with an invalid algorithm', function() {
     try {
-      const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys({ algorithm: 'ppp', modulusLength: 2048 })
+      const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('ppp')
     } catch(err) {
       assert.instanceOf(err, PureJWT.PureJWTError)
       assert.equal(err.message, `The argument 'type' must be a supported key type. Received 'ppp'`)
@@ -208,7 +218,7 @@ describe(`PureJWT Core Functionality`, function() {
 
   it('should store algorithm in the token header', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
 
     const jwt2 = new PureJWT({
       privateKey,
@@ -226,7 +236,7 @@ describe(`PureJWT Core Functionality`, function() {
 
   it('should store payload type in the token header', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
 
     const jwt2 = new PureJWT({
       privateKey,
@@ -286,160 +296,6 @@ describe(`PureJWT Core Functionality`, function() {
     }
   })
 })
-
-// describe('Token revocation', () => {
-
-//   let jwt
-
-//   beforeEach(function() {
-//     jwt = new PureJWT({ secret: '7a9a66475c4d177',
-//       acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`
-//     })
-//   })
-
-//   afterEach(function() {
-//     PureJWT.revokedTokens = new Map()
-//   })
-
-//   it('should revoke a token', function() {
-//     const payload = { sub: 'd2bb6a8d', iss: `https://securetoken.hostluxe.com/project/581753` }
-//     const token = jwt.createToken(payload)
-
-//     assert.isString(token)
-//     assert.isFalse(PureJWT.revokedTokens.has(token)) // Token should not be in the revoked set initially
-
-//     jwt.revokeToken(token) // Revoke the token
-
-//     assert.isTrue(PureJWT.revokedTokens.has(token)) // Token should be in the revoked set now
-//   })
-
-//   // Test: Should not verify a revoked token
-//   it('should not verify a revoked token', function() {
-//     const payload = { sub: 'd2bb6a8d', iss: `https://securetoken.hostluxe.com/project/581753` }
-//     const token = jwt.createToken(payload)
-//     jwt.revokeToken(token) // Revoke the token
-
-//     try {
-//       jwt.verifyToken(token) // Attempt to verify the revoked token
-//       assert.fail('Expected an error to be thrown') // If we reach this line, the test should fail
-//     } catch(err) {
-//       assert.instanceOf(err, PureJWT.PureJWTError) // It should throw a PureJWTError
-//       assert.equal(err.message, 'Token has been revoked') // With the message indicating the token was revoked
-//     }
-//   })
-
-//   it('should remove expired (exp) tokens from revokedTokens map', async function() {
-//     const expiredPayload = { sub: 'd2bb6a8d', iss: 'mysite.com', exp: Math.floor(Date.now() / 1000) - 60 }
-//     const expiredToken = jwt.createToken(expiredPayload)
-//     jwt.revokeToken(expiredToken)
-//     // Create a token that expired 1 minute ago
-//     const expiredPayload2 = { sub: '12345', iss: 'mysite.com', exp: Math.floor(Date.now() / 1000) - 90 }
-//     const expiredToken2 = jwt.createToken(expiredPayload2)
-//     jwt.revokeToken(expiredToken2)
-    
-//     // Create a token that expires in 1 hour
-//     const validPayload = { sub: 'd2bb6a8d', iss: 'mysite.com', exp: Math.floor(Date.now() / 1000) + 3600 }
-//     const validToken = jwt.createToken(validPayload)
-
-//     jwt.revokeToken(validToken)
-    
-//     // Call removeExpiredRevokedTokens method
-//     // PureJWT.removeExpiredRevokedTokens()
-    
-//     // Assert that the expired token was removed
-//     assert.lengthOf(Array.from(PureJWT.revokedTokens), 1)
-//     assert.isFalse(PureJWT.revokedTokens.has(expiredToken))
-//     assert.isTrue(PureJWT.revokedTokens.has(validToken))
-//   })
-
-//   it('should remove expired (iat) tokens from revokedTokens map', async function() {
-//     // Create a token that expired 1 minute ago
-//     const expiredPayload = { sub: 'd2bb6a8d', iss: 'mysite.com', iat: Math.floor(Date.now() / 1000) - (25 * 60 * 60) }
-//     const expiredToken = jwt.createToken(expiredPayload)
-//     jwt.revokeToken(expiredToken)
-    
-//     // Create a token that expires in 1 hour
-//     const validPayload = { sub: 'd2bb6a8d', iss: 'mysite.com' }
-//     const validToken = jwt.createToken(validPayload)
-
-//     jwt.revokeToken(validToken)
-    
-//     // Call removeExpiredRevokedTokens method
-//     // PureJWT.removeExpiredRevokedTokens()
-    
-//     // Assert that the expired token was removed
-//     assert.lengthOf(Array.from(PureJWT.revokedTokens), 1)
-//     assert.isFalse(PureJWT.revokedTokens.has(expiredToken))
-//     assert.isTrue(PureJWT.revokedTokens.has(validToken))
-//   })
-
-//   it('should not remove tokens if they are not expired', async function() {
-
-//     const unexpiredPayload = { sub: '12345', iss: 'mysite.com', exp: Math.floor(Date.now() / 1000) + 60 }
-//     const unexpiredToken = jwt.createToken(unexpiredPayload)
-//     jwt.revokeToken(unexpiredToken)
-
-//     // Create a token that expires in 1 hour
-//     const validPayload = { sub: 'd2bb6a8d', iss: 'mysite.com' }
-//     const validToken = jwt.createToken(validPayload)
-//     jwt.revokeToken(validToken)
-
-//     // Assert that the valid token is still in the revokedTokens set
-//     assert.lengthOf(Array.from(PureJWT.revokedTokens), 2)
-//     assert.isTrue(PureJWT.revokedTokens.has(unexpiredToken))
-//     assert.isTrue(PureJWT.revokedTokens.has(validToken))
-//   })
-
-//   it('should call onTokenRevoked callback when token is revoked', () => {
-
-//     const exp = Math.floor(Date.now() / 1000) + 60
-
-//     const unexpiredPayload = { sub: '12345', iss: 'mysite.com', exp  }
-//     const unexpiredToken = jwt.createToken(unexpiredPayload)
-
-//     const onTokenRevoked = (token, tokenExp) => {
-//       assert.equal(tokenExp, exp)
-//       assert.equal(token, unexpiredToken)
-//     }
-
-//     jwt.revokeToken(unexpiredToken, onTokenRevoked)
-//   })
-
-//   it(`should work without callbacks`, () => {
-
-//     const unexpiredPayload = { sub: '12345', iss: 'mysite.com', exp: Math.floor(Date.now() / 1000) + 60 }
-//     const unexpiredToken = jwt.createToken(unexpiredPayload)
-    
-//     assert.doesNotThrow(() => {
-//       jwt.revokeToken(unexpiredToken)
-//     })
-//   })
-
-//   it('should call onRevokedTokenRemoved when tokens are expired and removed', () => {
-
-//     const onRevokedTokenRemoved = removedTokens => {
-//       assert.isTrue(Array.isArray(removedTokens))
-//       assert.lengthOf(removedTokens, 2)
-//       assert.isString(removedTokens[0])
-//     }
-
-//     const expiredTimestamp = Math.floor(Date.now() / 1000) - 60
-
-//     const expiredPayload = { sub: 'd2bb6a8d', iss: 'mysite.com', exp: expiredTimestamp }
-//     const expiredToken = jwt.createToken(expiredPayload)
-//     PureJWT.revokedTokens.set(expiredToken, expiredTimestamp)
-//     // Create a token that expired 1 minute ago
-//     const expiredPayload2 = { sub: '12345', iss: 'mysite.com', exp: expiredTimestamp }
-//     const expiredToken2 = jwt.createToken(expiredPayload2)
-//     PureJWT.revokedTokens.set(expiredToken2, expiredTimestamp)
-    
-//     // Create a token that expires in 1 hour
-//     const validPayload = { sub: 'd2bb6a8d', iss: 'mysite.com', exp: Math.floor(Date.now() / 1000) + 3600 }
-//     const validToken = jwt.createToken(validPayload)
-//     jwt.revokeToken(validToken, null, onRevokedTokenRemoved)
-//   })
-// })
-
 
 describe(`'nbf' (Not Before) Claims`, function() {
 
@@ -950,7 +806,7 @@ describe('RSA PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a RS256 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
 
     const jwt2 = new PureJWT({ privateKey, publicKey })
 
@@ -959,7 +815,7 @@ describe('RSA PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a RS384 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 3072 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', { modulusLength: 3072 })
 
     const jwt2 = new PureJWT({ privateKey, publicKey })
 
@@ -968,7 +824,7 @@ describe('RSA PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a RS512 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 4096 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', { modulusLength: 4096 })
 
     const jwt2 = new PureJWT({ privateKey, publicKey })
 
@@ -977,7 +833,7 @@ describe('RSA PureJWT', function() {
 
   // Test 14: JWT signing with RSA
   it('should successfully sign the JWT with RS256', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
     const jwt2 = new PureJWT({ privateKey, publicKey, acceptableIssuers: 'myapp' })
     const payload = { sub: '1234567890', name: 'John Doe' }
     const token = jwt2.createToken(payload)
@@ -987,7 +843,7 @@ describe('RSA PureJWT', function() {
 
   // Test 15: Signature verification with public key
   it('should verify signature with the public key', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
     const jwt2 = new PureJWT({ privateKey, publicKey, acceptableIssuers: 'myapp' })
 
 
@@ -1008,7 +864,7 @@ describe('RSA PureJWT', function() {
 
   // Test 16: Verification failure for tampered signature
   it('should throw error when signature is tampered', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
     const jwt2 = new PureJWT({ privateKey, publicKey, acceptableIssuers: 'myapp' })
 
     // Create the token with original payload
@@ -1028,7 +884,7 @@ describe('ES PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a ES256 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('ec', { namedCurve: 'prime256v1' })
 
     const jwt2 = new PureJWT({ privateKey, publicKey })
 
@@ -1037,7 +893,7 @@ describe('ES PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a ES384 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'secp384r1' })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('ec', { namedCurve: 'secp384r1' })
 
     const jwt2 = new PureJWT({ privateKey, publicKey })
 
@@ -1046,7 +902,7 @@ describe('ES PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a ES512 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'secp521r1' })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('ec', { namedCurve: 'secp521r1' })
 
     const jwt2 = new PureJWT({ privateKey, publicKey })
 
@@ -1055,7 +911,7 @@ describe('ES PureJWT', function() {
 
   // Test 14: JWT signing with RSA
   it('should successfully sign the JWT with ES256', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('ec', { namedCurve: 'prime256v1' })
     const jwt2 = new PureJWT({ privateKey, publicKey, acceptableIssuers: 'myapp' })
     const payload = { sub: '1234567890', name: 'John Doe' }
     const token = jwt2.createToken(payload)
@@ -1065,7 +921,7 @@ describe('ES PureJWT', function() {
 
   // Test 15: Signature verification with public key
   it('should verify signature with the public key', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('ec', { namedCurve: 'prime256v1' })
     const jwt2 = new PureJWT({ privateKey, publicKey, acceptableIssuers: 'myapp' })
     const payload = { sub: '1234567890', name: 'John Doe', iss: 'myapp' }
     const token = jwt2.createToken(payload)
@@ -1082,7 +938,7 @@ describe('ES PureJWT', function() {
 
   // Test 16: Verification failure for tampered signature
   it('should throw error when signature is tampered', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('ec', { namedCurve: 'prime256v1' })
     const jwt2 = new PureJWT({ privateKey, publicKey, acceptableIssuers: 'myapp' })
 
     // Create the token with original payload
@@ -1105,7 +961,7 @@ describe('PS PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a PS256 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
 
     const jwt2 = new PureJWT({ privateKey, publicKey, algorithm: 'PS256', })
 
@@ -1114,7 +970,7 @@ describe('PS PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a PS384 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 3072 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', { modulusLength: 3072 })
 
     const jwt2 = new PureJWT({ privateKey, publicKey, algorithm: 'PS384', })
 
@@ -1123,7 +979,7 @@ describe('PS PureJWT', function() {
 
   it('should automatically detect Algorithm Type from a PS512 privateKey', function() {
 
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 4096 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', { modulusLength: 4096 })
 
     const jwt2 = new PureJWT({ privateKey, publicKey, algorithm: 'PS512', })
 
@@ -1132,7 +988,7 @@ describe('PS PureJWT', function() {
 
   // Test 14: JWT signing with RSA
   it('should successfully sign the JWT with PS256', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
     const jwt2 = new PureJWT({ privateKey, publicKey, algorithm: 'PS256',  acceptableIssuers: 'myapp' })
     const payload = { sub: '1234567890', name: 'John Doe' }
     const token = jwt2.createToken(payload)
@@ -1142,7 +998,7 @@ describe('PS PureJWT', function() {
 
   // Test 15: Signature verification with public key
   it('should verify signature with the public key', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
     const jwt2 = new PureJWT({ privateKey, publicKey, algorithm: 'PS256',  acceptableIssuers: 'myapp' })
     const payload = { sub: '1234567890', name: 'John Doe', iss: 'myapp' }
     const token = jwt2.createToken(payload)
@@ -1159,7 +1015,7 @@ describe('PS PureJWT', function() {
 
   // Test 16: Verification failure for tampered signature
   it('should throw error when signature is tampered', function() {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa')
     const jwt2 = new PureJWT({ privateKey, publicKey, algorithm: 'PS256',  acceptableIssuers: 'myapp' })
 
     // Create the token with original payload

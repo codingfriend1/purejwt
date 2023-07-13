@@ -1,5 +1,5 @@
 # PureJWT
-PureJWT is a lightweight, standalone library for JSON Web Token (JWT) creation, verification, and manipulation. Designed with ease-of-use and security in mind, it removes all reliance on third-party libraries, granting developers increased control and transparency over their web token operations. From generating public-private keys to verifying token signatures, PureJWT handles it all in a minimal, straightforward manner. It facilitates the use of both symmetric (HMAC) and asymmetric (RSA, ECDSA,  | RSA-PSS) cryptographic algorithms.
+PureJWT is a lightweight, standalone library for JSON Web Token (JWT) creation, verification, and manipulation. Designed with ease-of-use and security in mind, it removes all reliance on third-party libraries, granting developers increased control and transparency over their web token operations. From generating public-private keys to verifying token signatures, PureJWT handles it all in a minimal, straightforward manner. It facilitates the use of both symmetric (HMAC) and asymmetric (RSA, RSA-PSS, ECDSA) cryptographic algorithms.
 
 ## Installation
 To install PureJWT, use npm as shown below:
@@ -33,7 +33,6 @@ It also:
 - Capable of encoding and decoding JWTs.
 - Facilitates signing of JWTs.
 - Verifies JWTs.
-- Includes middleware for Express to verify tokens on protected routes.
 
 ## Usage
 To start using PureJWT, first import the class as follows:
@@ -49,15 +48,14 @@ To create a secure secret, you can use the PureJWT.generateSecret() function.
 const secret = PureJWT.generateSecret()
 console.log(`SECRET="${secret}"`)
 ```
-Generate the secret once during development and store it as a secret environment variable for future use in your code. **Make sure `.env` is added to your `.gitignore`.**. You don't want anyone to see your SECRET.
+Generate the secret once during development and store it as a secret environment variable for future use in your code. **Make sure `.env` is added to your `.gitignore`**. You don't want anyone to see your SECRET.
 
 ```env
-#.env
-# This is just an example so don't use this exact key
+#.env This is just an example so don't use this exact key
 SECRET="49b13c5f1d476472e9a5e3cd7c25e5cb1d040ec652549e1972a789891b751da6"
 ```
 
-By default, PureJWT will use `HS256` when you provide a secret, but you can override this by including `algorithm: 'HS512'`.
+By default, PureJWT will use `HS256` when you provide a secret, but you can override this by specifying the algorithm: `algorithm: 'HS384'` or `algorithm: 'HS512'`.
 
 ```javascript
 const jwt = new PureJWT({ secret: process.env.SECRET })
@@ -67,8 +65,8 @@ const jwt = new PureJWT({ secret: process.env.SECRET })
 PureJWT enables you to generate public/private keys, returning a PEM formatted string for use. Generate these keys once during development and store them as strings in your secret environment variables.
 
 ```javascript
-const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys({ 
-  algorithm: 'ec', 
+const algorithm = 'ec'
+const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys(algorithm, { 
   namedCurve: 'prime256v1' //ES256
   // namedCurve: 'secp384r1' //ES384
   // namedCurve: 'secp521r1' //ES512
@@ -78,8 +76,7 @@ console.log(`PUBLIC_KEY="${publicKey}"`)
 ```
 RSA keys can also be generated similarly.
 ```javascript
-const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys({ 
-  algorithm: 'rsa', //Default algorithm
+const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', { 
   modulusLength: 2048 // RS256
   // modulusLength: 3072 // RS384
   // modulusLength: 4096 // RS512
@@ -104,7 +101,7 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAED3IjFz13muGiU9MkUaGFc0LvixbKgrbh
 Lhw2RiVlx8sa0pPeqMlytJOXHpF7WBS7eijxiUj1/9vxNbidW2WHGg==
 -----END PUBLIC KEY-----"
 ```
-PureJWT is equipped to automatically detect the suitable algorithm based on the provided keys. There's no need to specify the algorithm. However, PureJWT cannot automatically detect PS256, PS384, PS512 algorithms as these must be explicitely specified.
+PureJWT is equipped to automatically detect the suitable algorithm based on the provided keys. There's no need to specify the algorithm. However, PureJWT cannot automatically detect `PS256`, `PS384`, `PS512` algorithms as these must be explicitely specified.
 
 ```javascript
 require('dotenv').config(); // Install with npm install --save dotenv
@@ -117,7 +114,7 @@ const jwt = new PureJWT({
 ```
 
 ### Additional Options
-Additional information can be provided when creating your instance. In the following example, the token will automatically expire after one week (7 days * 24 hours * 60 minutes). The default expiration is 1 day. The list of accepted issuers and audiences can also be set as an array of strings or a single string.
+Additional information can be provided when creating your instance. In the following example, the token will automatically expire after one week (7 days * 24 hours * 60 minutes). The default expiration is 1 day. The list of accepted issuers and audiences can also be set as an array of strings or a single string that will enforce what token audiences and issuers PureJWT accepts during verification.
 
 ```javascript
 const jwt = new PureJWT({ 
@@ -130,7 +127,7 @@ const jwt = new PureJWT({
 ```
 
 ## Creating a JWT Token
-You can incorporate any information you want in the payload. Conventionally, the UserID is stored under `sub`, which stands for subject. PureJWT will refuse tokens where the `aud` and `iss` don't match the `audience` and `issuer` set in instantiation. If you provide an `iat` (Issued At), `exp` (Expiration), `nbf` (Not Before), PureJWT will enforce those timestamps. Traditionally, `iat`, `exp`, and `nbf` are set in seconds, but if you set them in milliseconds, PureJWT will detect that and convert it accordingly.
+You can incorporate any information you want in the payload. Conventionally, the UserID is stored under `sub`, which stands for subject. PureJWT will refuse tokens where the `aud` and `iss` don't match the `acceptableAudiences` and `acceptableIssuers` set in instantiation. If you provide an `iat` (Issued At), `exp` (Expiration), `nbf` (Not Before), PureJWT will enforce those timestamps. For `iat`, PureJWT will calculate the expiration by adding the provided `iat` to the `durationInMinutes` supplied during instantiation. `durationInMinutes` defaults to 24 hours if not explicitely set. Traditionally, `iat`, `exp`, and `nbf` are set in seconds, but if you set them in milliseconds, PureJWT will detect that and convert it accordingly.
 
 ```javascript
 const payload = { 
@@ -218,9 +215,6 @@ app.get('/api/orders', jwt.getTokenPayload('token'), async (req, res) => {
   }
 });
 ```
-In this example, the middleware is applied to a specific route `/api/orders`. When a valid token is present in the request, the middleware function will append the payload to the request object under `req.payload`. You can then use this payload (containing your user data or other information) in your route handler functions.
-
-This way, PureJWT middleware provides an elegant way of validating JWTs in your Express routes, and handling cases where the token might be invalid or expired.
 
 ## Contributing
 We encourage you to contribute to PureJWT! Please check out the Contributing guidelines.

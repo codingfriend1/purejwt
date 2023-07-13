@@ -257,11 +257,7 @@ class PureJWT {
 
       return { header, payload };
     } catch (err) {
-      throw new PureJWT.PureJWTError(
-        "Token cannot be parsed. It must stand alone or be accompanied with a Bearer, Basic, or Digest prefix.",
-        400,
-        err
-      );
+      throw new PureJWT.PureJWTError("Token cannot be parsed.", 400, err);
     }
   }
 

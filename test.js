@@ -1245,7 +1245,7 @@ describe("PS PureJWT", function () {
 //       .set('Authorization', `Lama ${token}`)
 //       .expect(400)
 //       .end((err, res) => {
-//         assert.equal(res.body.message, 'Token cannot be parsed. It must stand alone or be accompanied with a Bearer, Basic, or Digest prefix.')
+//         assert.equal(res.body.message, 'Token cannot be parsed.')
 //         done()
 //       })
 //   })

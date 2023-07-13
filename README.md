@@ -56,14 +56,12 @@ console.log(`SECRET="${PureJWT.generateSecret()}"`);
 Use this secret to instantiate PureJWT:
 
 ```javascript
-require("dotenv").config(); // Install with npm install --save dotenv
-
 const jwt = new PureJWT({
   secret: process.env.SECRET,
 });
 ```
 
-Generate and store private/public keys as secure environment variables. Use these keys to initialize PureJWT without needing to specify the algorithm (except for `PS256`, `PS384`, or `PS512`). With public/private keys, the appropriate algorithm is automatically detected.
+Generate and store private/public keys as secure environment variables. Use these keys to initialize PureJWT without needing to specify the algorithm (except for `PS256`, `PS384`, or `PS512`).
 
 ```javascript
 const jwt = new PureJWT({
@@ -76,11 +74,14 @@ During initialization, you can specify options such as token lifespan, and accep
 
 ```javascript
 const jwt = new PureJWT({
-  algorithm: "HS384", // Default is HS256.
   secret: process.env.SECRET,
-  acceptableIssuers: "your-awesome-server.com", // Can also be an array of strings
-  acceptableAudiences: ["apiService", "userService"], // Can also be a string
-  durationInMinutes: 7 * 24 * 60, // Token lifespan default is 24 hours
+  algorithm: "HS384", // Default algorithm is HS256.
+  durationInMinutes: 7 * 24 * 60, // Default token lifespan is 24 hours
+  acceptableIssuers: "securetoken.hostluxe.com", // Can also be an array of strings
+  acceptableAudiences: [
+    "microservice.hostluxe.com",
+    "premiumservice.hostluxe.com",
+  ], // Can also be a string
 });
 ```
 
@@ -89,7 +90,6 @@ Create a JWT token:
 ```javascript
 const payload = {
   sub: "1234567890", // 'Subject' - Traditionally it's the UserID
-  email: "john.doe@your-awesome-server.com",
   role: "admin",
   exp: Date.now() + 1000 * 60 * 15, // Expiration 15 minutes
 };
@@ -101,44 +101,33 @@ Verify a JWT token:
 ```javascript
 try {
   const payload = jwt.verifyToken(token);
-  console.log(payload.sub);
 } catch (PureJWTError) {
-  console.error(PureJWTError);
+  res.status(PureJWTError.statusCode).json({ message: PureJWTError.message });
 }
 ```
 
 For more detailed information on usage, please refer to the detailed API Reference section.
 
-## Generating Keys
+## Key Creation
 
-You can use PureJWT to generate public/private keys in PEM format. Generate these keys once in the development stage and store them as string values in your secure environment variables.
+Use PureJWT to generate public/private keys in PEM format once during development. Store these keys as strings in your secure environment variables.
 
 ```javascript
-// 'secp384r1' corresponds to ES384
-// 'secp521r1' corresponds to ES512
-const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys("ec", { 
-  namedCurve: "prime256v1" // corresponds to ES256
+const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys("ec", {
+  namedCurve: "prime256v1",
 });
 console.log(`PRIVATE_KEY="${privateKey}"`);
 console.log(`PUBLIC_KEY="${publicKey}"`);
 ```
 
-You can also create RSA keys similarly.
-
-```javascript
-// A modulusLength of 3072 corresponds to RS384
-// A modulusLength of 4096 corresponds to RS512
-const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys("rsa", {
-  modulusLength: 2048, // corresponds to RS256
-});
-```
-
 ## API Reference
 
-- `PureJWT.generateSecret()`: Generates a secure secret for HMAC algorithms.
-- `PureJWT.generatePublicPrivateKeys(algorithm, options)`: Generates private and public keys for RSA, RSA-PSS, and ECDSA algorithms.
-- `PureJWT.extractJwtFromBearer(tokenWithPrefix)`: Extracts the JWT token from a bearer, basic, or digest authentication scheme.
-- PureJWTError: Custom error class that includes a message and statusCode.
+- **PureJWT.generateSecret()**: Creates a secure secret for HMAC algorithms.
+- **PureJWT.generatePublicPrivateKeys(algorithm, options)**: Produces private and public keys for RSA, RSA-PSS, and ECDSA algorithms.
+  - With the **'rsa'** algorithm, **options.modulusLength** values of **2048**, **3072**, and **4096** match **256**, **384**, and **512** bit lengths respectively.
+  - With the **'ec'** algorithm, **options.namedCurve** values of **'prime256v1'**, **'secp384r1'**, and **'secp521r1'** match **ES256**, **ES384**, and **ES512** respectively.
+- **PureJWT.extractJwtFromBearer(tokenWithPrefix)**: Retrieves the JWT token from a bearer, basic, or digest authentication scheme.
+- **PureJWTError**: A unique error class featuring a message and statusCode.
 
 ## Error handling
 

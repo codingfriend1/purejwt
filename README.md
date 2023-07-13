@@ -29,7 +29,7 @@ PureJWT supports the following algorithms
 It also:
 
 - Allows generation of a secret for HMAC algorithms.
-- Generates public and private keys for RSA and ECDSA algorithms.
+- Generates public and private keys for RSA, RSA-PSS, and ECDSA algorithms.
 - Capable of encoding and decoding JWTs.
 - Facilitates signing of JWTs.
 - Verifies JWTs.
@@ -38,15 +38,14 @@ It also:
 To start using PureJWT, first import the class as follows:
 
 ```javascript
-const PureJWT = require('purejwt')
+const PureJWT = require('purejwt');
 ```
 
 ### Creating a Secret
 To create a secure secret, you can use the PureJWT.generateSecret() function.
 
 ```javascript
-const secret = PureJWT.generateSecret()
-console.log(`SECRET="${secret}"`)
+console.log(`SECRET="${PureJWT.generateSecret()}"`);
 ```
 Generate the secret once during development and store it as a secret environment variable for future use in your code. **Make sure `.env` is added to your `.gitignore`**. You don't want anyone to see your SECRET.
 
@@ -58,7 +57,7 @@ SECRET="49b13c5f1d476472e9a5e3cd7c25e5cb1d040ec652549e1972a789891b751da6"
 By default, PureJWT will use `HS256` when you provide a secret, but you can override this by specifying the algorithm: `algorithm: 'HS384'` or `algorithm: 'HS512'`.
 
 ```javascript
-const jwt = new PureJWT({ secret: process.env.SECRET })
+const jwt = new PureJWT({ secret: process.env.SECRET });
 ```
 
 ### Using Private/Public Keys
@@ -70,9 +69,9 @@ const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys(algorithm, {
   namedCurve: 'prime256v1' //ES256
   // namedCurve: 'secp384r1' //ES384
   // namedCurve: 'secp521r1' //ES512
-})
-console.log(`PRIVATE_KEY="${privateKey}"`)
-console.log(`PUBLIC_KEY="${publicKey}"`)
+});
+console.log(`PRIVATE_KEY="${privateKey}"`);
+console.log(`PUBLIC_KEY="${publicKey}"`);
 ```
 RSA keys can also be generated similarly.
 ```javascript
@@ -80,9 +79,9 @@ const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', {
   modulusLength: 2048 // RS256
   // modulusLength: 3072 // RS384
   // modulusLength: 4096 // RS512
-})
-console.log(`PRIVATE_KEY="${privateKey}"`)
-console.log(`PUBLIC_KEY="${publicKey}"`)
+});
+console.log(`PRIVATE_KEY="${privateKey}"`);
+console.log(`PUBLIC_KEY="${publicKey}"`);
 ```
 Store the contents of privateKey and publicKey in a private .env file (added to `.gitignore`).
 
@@ -110,11 +109,11 @@ const jwt = new PureJWT({
   //algorithm: 'PS256',
   privateKey: process.env.PRIVATE_KEY, 
   publicKey: process.env.PUBLIC_KEY 
-})
+});
 ```
 
 ### Additional Options
-Additional information can be provided when creating your instance. In the following example, the token will automatically expire after one week (7 days * 24 hours * 60 minutes). The default expiration is 1 day. The list of accepted issuers and audiences can also be set as an array of strings or a single string that will enforce what token audiences and issuers PureJWT accepts during verification.
+Additional information can be provided when creating your instance. In the following example, the token will automatically expire after one week (7 days * 24 hours * 60 minutes). The default expiration is 24 hours. The list of accepted issuers and audiences can also be set as an array of strings or a single string that will enforce what token audiences and issuers PureJWT accepts during verification.
 
 ```javascript
 const jwt = new PureJWT({ 
@@ -123,11 +122,11 @@ const jwt = new PureJWT({
   acceptableIssuers: 'your-awesome-server.com', // Can also be an array of strings
   acceptableAudiences: ['apiService', 'userService'], // Can also be a single string
   durationInMinutes: 7 * 24 * 60 
-})
+});
 ```
 
 ## Creating a JWT Token
-You can incorporate any information you want in the payload. Conventionally, the UserID is stored under `sub`, which stands for subject. PureJWT will refuse tokens where the `aud` and `iss` don't match the `acceptableAudiences` and `acceptableIssuers` set in instantiation. If you provide an `iat` (Issued At), `exp` (Expiration), `nbf` (Not Before), PureJWT will enforce those timestamps. For `iat`, PureJWT will calculate the expiration by adding the provided `iat` to the `durationInMinutes` supplied during instantiation. `durationInMinutes` defaults to 24 hours if not explicitely set. Traditionally, `iat`, `exp`, and `nbf` are set in seconds, but if you set them in milliseconds, PureJWT will detect that and convert it accordingly.
+You can incorporate any information you want in the payload. Conventionally, the UserID is stored under `sub`, which stands for subject. PureJWT will refuse tokens where the `aud` and `iss` don't match the `acceptableAudiences` and `acceptableIssuers` set in instantiation. If you provide an `iat` (Issued At), `exp` (Expiration), `nbf` (Not Before), PureJWT will enforce those timestamps. For `iat`, PureJWT will calculate the expiration by adding the provided `iat` to the `durationInMinutes` supplied during instantiation. Traditionally, `iat`, `exp`, and `nbf` are set in seconds, but if you set them in milliseconds, PureJWT will detect that and convert it accordingly.
 
 ```javascript
 const payload = { 
@@ -135,9 +134,9 @@ const payload = {
   email: 'john.doe@your-awesome-server.com', 
   role: 'admin',
   exp: Date.now() + (1000 * 60 * 15) // 15 minutes
-}
-const token = jwt.createToken(payload)
-console.log(token) 
+};
+const token = jwt.createToken(payload);
+console.log(token);
 //token === "ekeyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNzIjoibXlhcHAiLCJpYXQiOjE2ODkxMzI4NTB9.tGwQ/oedECLkQoGmUAlGyMr8vlzsJ27EqYNe3QthDpLB5eUBKk6nEZt4WTdQqB8hGt/j5IhrkUEkCMhQlcKOXg=="
 ```
 
@@ -146,10 +145,10 @@ To verify a JWT token, use the following approach:
 
 ```javascript
 try {
-  const payload = jwt.verifyToken(token)
-  console.log(payload.sub)
+  const payload = jwt.verifyToken(token);
+  console.log(payload.sub);
 } catch(PureJWTError) {
-  console.error(PureJWTError)
+  console.error(PureJWTError);
 }
 ```
 
@@ -196,7 +195,9 @@ app.post('/login', (req, res) => {
 
 app.get('/api/orders', jwt.getTokenPayload('token'), async (req, res) => {
   try {
+
     const token = PureJWT.extractJwtFromBearer(req.headers.authorization);
+
     req.payload = jwt.verifyToken(token);
 
     const userID = req.payload.sub;

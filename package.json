@@ -1,0 +1,49 @@
+{
+  "name": "purejwt",
+  "version": "0.1.0",
+  "description": "PureJWT is a lightweight, standalone library for JSON Web Token (JWT) creation, verification, and manipulation. Designed with ease-of-use and security in mind, it removes reliance on third-party libraries, granting developers increased control and transparency over their web token operations. From generating public-private keys to verifying token signatures, PureJWT handles it all in a minimal, straightforward manner.",
+  "main": "purejwt.js",
+  "scripts": {
+    "test": "mocha test.js"
+  },
+  "author": "Jon Paul Miles",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codingfriend1/purejwt"
+  },
+  "bugs": {
+    "url": "https://github.com/codingfriend1/purejwt/issues"
+  },
+  "homepage": "https://github.com/codingfriend1/purejwt#readme",
+  "keywords": [
+    "JWT",
+    "Tokens",
+    "JSON Web Tokens",
+    "Token Generation",
+    "Token Verification",
+    "Public-Private Key",
+    "Cryptography",
+    "Web Security",
+    "Node.js",
+    "Standalone",
+    "Lightweight",
+    "Server-side",
+    "Authentication",
+    "Authorization",
+    "Signature Verification",
+    "Encryption",
+    "Hashing",
+    "Asynchronous Algorithms",
+    "Synchronous Algorithms",
+    "Web Development",
+    "Secure Communication"
+  ],
+  "devDependencies": {
+    "chai": "^4.3.7",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.18.2",
+    "mocha": "^10.2.0",
+    "supertest": "^6.3.3"
+  }
+}

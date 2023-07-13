@@ -53,8 +53,8 @@ class PureJWT {
 
   /**
    * Generate public and private keys using crypto
+   * @param {string} algorithm - The algorithm to use (rsa | ec)
    * @param {Object} options - The options for the key generation
-   * @param {string} options.algorithm - The algorithm to use
    * @param {number} options.modulusLength - The length of the modulus
    * @param {string} options.namedCurve - The name of the curve to use
    * @return {Object} The private and public keys

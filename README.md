@@ -157,7 +157,7 @@ app.post("/login", (req, res) => {
   });
 });
 
-app.get("/api/orders", jwt.getTokenPayload("token"), async (req, res) => {
+app.get("/api/orders", async (req, res) => {
   try {
     const token = PureJWT.extractJwtFromBearer(req.headers.authorization);
 

@@ -433,7 +433,7 @@ class PureJWT {
     if (!token)
       throw new PureJWT.PureJWTError("Unauthorized: No token provided", 400);
 
-    const authMatch = token.match(/^(Bearer|Basic|Digest)\s(.+)/i);
+    const authMatch = token.match(/^(Bearer|Basic|Digest|JWT)\s(.+)/i);
 
     return authMatch ? authMatch[2] : token;
   }

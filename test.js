@@ -309,6 +309,44 @@ describe(`PureJWT Core Functionality`, function () {
     }
   });
 
+  it("should transfer tokens in base64url format", function () {
+
+    const payload = { 
+      name: `�C�|r`,
+      iat: 1689351277010
+    };
+
+    const encoded_payload = Buffer.from(JSON.stringify(payload)).toString(
+      "base64"
+    );
+
+    //encoded_payload = eyJuYW1lIjoi77+9Q++/vXxyIiwiaWF0IjoxNjg5MzUxMjc3MDEwfQ==
+
+    assert.include(encoded_payload, '/');
+    assert.include(encoded_payload, '+');
+    assert.include(encoded_payload, '=');
+
+    const token = jwt.createToken(payload);
+    const decoded_payload = token.split(".")[1]
+
+    assert.notInclude(decoded_payload, '/');
+    assert.notInclude(decoded_payload, '+');
+    assert.notInclude(decoded_payload, '=');
+  });
+
+  it("should not create a token without a payload", function () {
+    try {
+      const token = jwt.createToken();
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(
+        err.message,
+        `Payload must be an object with at least one key.`
+      );
+    }
+  });
+
   it("should automatically detect Algorithm Type from a secret", function () {
     const jwt2 = new PureJWT({ secret: "Hello" });
 

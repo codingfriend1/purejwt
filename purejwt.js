@@ -239,12 +239,13 @@ class PureJWT {
    * @return {string} Encoded header and payload
    */
   static encodeContent(header, payload) {
+
     const encodedHeader = Buffer.from(JSON.stringify(header)).toString(
-      "base64"
+      "base64url"
     );
 
     const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
-      "base64"
+      "base64url"
     );
 
     return `${encodedHeader}.${encodedPayload}`;
@@ -259,10 +260,10 @@ class PureJWT {
   static decodeContent(headerB64, payloadB64) {
     try {
       const header = JSON.parse(
-        Buffer.from(headerB64, "base64").toString("utf8")
+        Buffer.from(headerB64, "base64url").toString("utf8")
       );
       const payload = JSON.parse(
-        Buffer.from(payloadB64, "base64").toString("utf8")
+        Buffer.from(payloadB64, "base64url").toString("utf8")
       );
 
       return { header, payload };
@@ -282,7 +283,7 @@ class PureJWT {
       return crypto
         .createHmac(this.sigAlg, this.secret)
         .update(content)
-        .digest(isSigning ? "base64" : "");
+        .digest(isSigning ? "base64url" : "");
     } else {
       let key;
 
@@ -300,7 +301,7 @@ class PureJWT {
 
       return crypto
         .sign(this.sigAlg, Buffer.from(content), key)
-        .toString("base64");
+        .toString("base64url");
     }
   }
 
@@ -311,7 +312,7 @@ class PureJWT {
    * @return {boolean} Content matches signature
    */
   verifySignature(contentB64, signatureB64, alg) {
-    const signature = Buffer.from(signatureB64, "base64");
+    const signature = Buffer.from(signatureB64, "base64url");
 
     if (alg.includes("HS")) {
       return crypto.timingSafeEqual(this.sign(contentB64), signature);

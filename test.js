@@ -104,7 +104,7 @@ describe("PureJWT Instantiation", function () {
     }
   });
 
-  it("should not accept a RS256 algorithm without a privateKey and PublicKey", function () {
+  it("should not accept a RS256 algorithm without any keys", function () {
     try {
       const jwt2 = new PureJWT({
         algorithm: "RS256",
@@ -114,8 +114,41 @@ describe("PureJWT Instantiation", function () {
       assert.instanceOf(err, PureJWT.PureJWTError);
       assert.equal(
         err.message,
-        `An asynchronous algorithm must provide a 'publicKey' and 'privateKey'.`
+        `An asynchronous algorithm must provide a 'publicKey' to verify and also a 'privateKey' to sign.`
       );
+    }
+  });
+
+  it("should not accept a RS256 algorithm without a publicKey", function () {
+    try {
+      const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys();
+
+      const jwt2 = new PureJWT({
+        algorithm: "RS256",
+        privateKey,
+      });
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(
+        err.message,
+        `An asynchronous algorithm must provide a 'publicKey' to verify and also a 'privateKey' to sign.`
+      );
+    }
+  });
+
+  it("should accept a RS256 algorithm with just a publicKey", function () {
+    try {
+      const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys();
+
+      const jwt2 = new PureJWT({
+        algorithm: "RS256",
+        publicKey,
+      });
+
+      assert.equal(jwt2.publicKey, publicKey);
+    } catch (err) {
+      assert.fail("Should not have thrown an error");
     }
   });
 
@@ -170,17 +203,21 @@ describe(`PureJWT Core Functionality`, function () {
     const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys();
     assert.isString(privateKey);
     assert.isString(publicKey);
-    assert.isTrue(publicKey.includes('\n'));
-    assert.isTrue(privateKey.includes('\n'));
+    assert.isTrue(publicKey.includes("\n"));
+    assert.isTrue(privateKey.includes("\n"));
   });
 
   // Test 9: Can we generate public and private keys
   it("should generate a pair of RSA key on a single line", function () {
-    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', {}, true);
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys(
+      "rsa",
+      {},
+      true
+    );
     assert.isString(privateKey);
     assert.isString(publicKey);
-    assert.isFalse(publicKey.includes('\n'));
-    assert.isFalse(privateKey.includes('\n'));
+    assert.isFalse(publicKey.includes("\n"));
+    assert.isFalse(privateKey.includes("\n"));
   });
 
   // Test 9: Can we generate public and private keys
@@ -237,6 +274,44 @@ describe(`PureJWT Core Functionality`, function () {
     const decodedSignature = Buffer.from(parts[2], "base64").toString("utf8");
 
     assert.isString(decodedSignature);
+  });
+
+  it("should not create a token without a private key", function () {
+    try {
+      const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys();
+
+      const jwt2 = new PureJWT({
+        algorithm: "RS256",
+        publicKey,
+      });
+
+      jwt2.createToken({ sub: "12345" });
+
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(
+        err.message,
+        `PureJWT was not instantiated with a 'privateKey' and is unable to createTokens.`
+      );
+    }
+  });
+
+  it("should not create a token with a private key", function () {
+    try {
+      const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys();
+
+      const jwt2 = new PureJWT({
+        algorithm: "RS256",
+        publicKey,
+        privateKey,
+      });
+
+      const token = jwt2.createToken({ sub: "12345" });
+      assert.isString(token);
+    } catch (err) {
+      assert.fail("Should not throw an error");
+    }
   });
 
   // Test 4: Verify a token
@@ -310,10 +385,9 @@ describe(`PureJWT Core Functionality`, function () {
   });
 
   it("should transfer HS tokens in base64url format", function () {
-
-    const payload = { 
+    const payload = {
       name: `�C�|r`,
-      iat: 1689351277010
+      iat: 1689351277010,
     };
 
     const encoded_payload = Buffer.from(JSON.stringify(payload)).toString(
@@ -322,28 +396,30 @@ describe(`PureJWT Core Functionality`, function () {
 
     //encoded_payload = eyJuYW1lIjoi77+9Q++/vXxyIiwiaWF0IjoxNjg5MzUxMjc3MDEwfQ==
 
-    assert.include(encoded_payload, '/');
-    assert.include(encoded_payload, '+');
-    assert.include(encoded_payload, '=');
+    assert.include(encoded_payload, "/");
+    assert.include(encoded_payload, "+");
+    assert.include(encoded_payload, "=");
 
     const token = jwt.createToken(payload);
 
-    let signatureB64 = token.split('.')[2]
+    let signatureB64 = token.split(".")[2];
 
-    const decoded_signature = Buffer.from(signatureB64, "base64url").toString("utf8");
-    const b64_encoded_signature = Buffer.from(decoded_signature).toString("base64");
+    const decoded_signature = Buffer.from(signatureB64, "base64url").toString(
+      "utf8"
+    );
+    const b64_encoded_signature =
+      Buffer.from(decoded_signature).toString("base64");
 
-    assert.include(b64_encoded_signature, '/');
-    assert.include(b64_encoded_signature, '+');
-    assert.include(b64_encoded_signature, '=');
+    assert.include(b64_encoded_signature, "/");
+    assert.include(b64_encoded_signature, "+");
+    assert.include(b64_encoded_signature, "=");
 
-    assert.notInclude(token, '/');
-    assert.notInclude(token, '+');
-    assert.notInclude(token, '=');
+    assert.notInclude(token, "/");
+    assert.notInclude(token, "+");
+    assert.notInclude(token, "=");
   });
 
   it("should transfer RSA and PS tokens in base64url format", function () {
-
     const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys("rsa");
 
     const jwt2 = new PureJWT({
@@ -351,54 +427,59 @@ describe(`PureJWT Core Functionality`, function () {
       publicKey,
     });
 
-    const payload = { 
+    const payload = {
       name: `�C�|r`,
-      iat: 1689351277010
+      iat: 1689351277010,
     };
 
     const token = jwt2.createToken(payload);
 
-    let signatureB64 = token.split('.')[2]
+    let signatureB64 = token.split(".")[2];
 
-    const decoded_signature = Buffer.from(signatureB64, "base64url").toString("utf8");
-    const b64_encoded_signature = Buffer.from(decoded_signature).toString("base64");
+    const decoded_signature = Buffer.from(signatureB64, "base64url").toString(
+      "utf8"
+    );
+    const b64_encoded_signature =
+      Buffer.from(decoded_signature).toString("base64");
 
-    assert.include(b64_encoded_signature, '/');
-    assert.include(b64_encoded_signature, '+');
+    assert.include(b64_encoded_signature, "/");
+    assert.include(b64_encoded_signature, "+");
 
-    assert.notInclude(token, '/');
-    assert.notInclude(token, '+');
-    assert.notInclude(token, '=');
+    assert.notInclude(token, "/");
+    assert.notInclude(token, "+");
+    assert.notInclude(token, "=");
   });
 
   it("should transfer EC tokens in base64url format", function () {
-
     const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys("ec");
 
     const jwt2 = new PureJWT({
-      algorithm: 'ES256',
+      algorithm: "ES256",
       privateKey,
       publicKey,
     });
 
-    const payload = { 
+    const payload = {
       name: `�C�|r`,
-      iat: 1689351277010
+      iat: 1689351277010,
     };
 
     const token = jwt2.createToken(payload);
 
-    let signatureB64 = token.split('.')[2]
+    let signatureB64 = token.split(".")[2];
 
-    const decoded_signature = Buffer.from(signatureB64, "base64url").toString("utf8");
-    const b64_encoded_signature = Buffer.from(decoded_signature).toString("base64");
+    const decoded_signature = Buffer.from(signatureB64, "base64url").toString(
+      "utf8"
+    );
+    const b64_encoded_signature =
+      Buffer.from(decoded_signature).toString("base64");
 
-    assert.include(b64_encoded_signature, '/');
-    assert.include(b64_encoded_signature, '+');
+    assert.include(b64_encoded_signature, "/");
+    assert.include(b64_encoded_signature, "+");
 
-    assert.notInclude(token, '/');
-    assert.notInclude(token, '+');
-    assert.notInclude(token, '=');
+    assert.notInclude(token, "/");
+    assert.notInclude(token, "+");
+    assert.notInclude(token, "=");
   });
 
   it("should not create a token without a payload", function () {

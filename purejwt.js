@@ -109,6 +109,13 @@ class PureJWT {
       );
     }
 
+    if(this.publicKey && !this.privateKey) {
+      throw new PureJWT.PureJWTError(
+        `PureJWT was not instantiated with a 'privateKey' and is unable to createTokens.`,
+        500
+      );
+    }
+
     payload = PureJWT.preverifyClaims({ ...payload });
 
     const header = { typ: "JWT", alg: this.algorithm };
@@ -170,10 +177,10 @@ class PureJWT {
 
     if (
       !this.algorithm.includes("HS") &&
-      (!this.publicKey || !this.privateKey)
+      (!this.publicKey)
     ) {
       throw new PureJWT.PureJWTError(
-        `An asynchronous algorithm must provide a 'publicKey' and 'privateKey'.`,
+        `An asynchronous algorithm must provide a 'publicKey' to verify and also a 'privateKey' to sign.`,
         500
       );
     }

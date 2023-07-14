@@ -120,6 +120,17 @@ console.log(`PRIVATE_KEY="${privateKey}"`);
 console.log(`PUBLIC_KEY="${publicKey}"`);
 ```
 
+## Verifying Third-Party Tokens
+If your requirement is limited to verifying tokens created by a third-party service using their public key, you can instantiate PureJWT without providing a privateKey. However, it's important to note that in this configuration, you won't have the capability to generate tokens yourself. Here's an example of how you can instantiate PureJWT with only the publicKey:
+
+```javascript
+const jwt = new PureJWT({
+  publicKey: process.env.THIRD_PARTY_PUBLIC_KEY,
+});
+```
+
+With this setup, you can securely verify tokens using the provided publicKey but won't have the ability to create new tokens within your application.
+
 ## API Reference
 
 - **PureJWT.generateSecret()**: Creates a secure secret for HMAC algorithms.

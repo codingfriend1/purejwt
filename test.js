@@ -166,10 +166,21 @@ describe(`PureJWT Core Functionality`, function () {
   });
 
   // Test 9: Can we generate public and private keys
-  it("should generate a pair of RSA keys", function () {
+  it("should generate a pair of multiline RSA keys", function () {
     const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys();
     assert.isString(privateKey);
     assert.isString(publicKey);
+    assert.isTrue(publicKey.includes('\n'));
+    assert.isTrue(privateKey.includes('\n'));
+  });
+
+  // Test 9: Can we generate public and private keys
+  it("should generate a pair of RSA key on a single line", function () {
+    const { privateKey, publicKey } = PureJWT.generatePublicPrivateKeys('rsa', {}, true);
+    assert.isString(privateKey);
+    assert.isString(publicKey);
+    assert.isFalse(publicKey.includes('\n'));
+    assert.isFalse(privateKey.includes('\n'));
   });
 
   // Test 9: Can we generate public and private keys

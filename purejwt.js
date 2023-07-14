@@ -59,21 +59,30 @@ class PureJWT {
    * @param {string} options.namedCurve - The name of the curve to use
    * @return {Object} The private and public keys
    */
-  static generatePublicPrivateKeys(algorithm = "rsa", options = {}) {
+  static generatePublicPrivateKeys(algorithm = "rsa", options = {}, singleLine = false) {
     try {
       if (algorithm === "rsa")
         options.modulusLength = options.modulusLength || 2048;
       if (algorithm === "ec")
         options.namedCurve = options.namedCurve || "prime256v1";
 
-      const { privateKey, publicKey } = crypto.generateKeyPairSync(
+      let { privateKey, publicKey } = crypto.generateKeyPairSync(
         algorithm,
         options
       );
 
+      privateKey = privateKey.export({ type: "pkcs8", format: "pem" });
+      publicKey = publicKey.export({ type: "spki", format: "pem" })
+
+      if(singleLine) {
+        privateKey = privateKey.replace(/\n/g, "\\n")
+        publicKey = publicKey.replace(/\n/g, "\\n")
+      }
+      
+
       return {
-        privateKey: privateKey.export({ type: "pkcs8", format: "pem" }),
-        publicKey: publicKey.export({ type: "spki", format: "pem" }),
+        privateKey,
+        publicKey
       };
     } catch (err) {
       throw new PureJWT.PureJWTError(err.message, 500, err);

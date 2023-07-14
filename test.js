@@ -161,7 +161,7 @@ describe("PureJWT Instantiation", function () {
       assert.fail("Expected an error to be thrown");
     } catch (err) {
       assert.instanceOf(err, PureJWT.PureJWTError);
-      assert.equal(err.message, `Cannot infer algorithm from privateKey.`);
+      assert.equal(err.message, `Cannot infer algorithm from publicKey.`);
     }
   });
 
@@ -173,7 +173,7 @@ describe("PureJWT Instantiation", function () {
       assert.fail("Expected an error to be thrown");
     } catch (err) {
       assert.instanceOf(err, PureJWT.PureJWTError);
-      assert.equal(err.message, `Cannot infer algorithm from privateKey.`);
+      assert.equal(err.message, `Cannot infer algorithm from publicKey.`);
     }
   });
 });

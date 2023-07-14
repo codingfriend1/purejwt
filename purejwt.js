@@ -23,7 +23,7 @@ class PureJWT {
     this.algorithm =
       algorithm ||
       (this.secret !== undefined && "HS256") ||
-      PureJWT.inferAlgorithmFromKey(this.privateKey);
+      PureJWT.inferAlgorithmFromKey(this.publicKey);
     this.sigAlg = PureJWT.SUPPORTED_ALGORITHMS[this.algorithm];
 
     // Verify the given algorithm and keys
@@ -87,7 +87,7 @@ class PureJWT {
         publicKey
       };
     } catch (err) {
-      throw new PureJWT.PureJWTError(err.message, 500, err);
+      throw new PureJWT.PureJWTError(err.message, 500);
     }
   }
 
@@ -228,15 +228,13 @@ class PureJWT {
       }
 
       throw new PureJWT.PureJWTError(
-        `Cannot infer algorithm from privateKey.`,
+        `Cannot infer algorithm from publicKey.`,
         500,
-        err
       );
     } catch (err) {
       throw new PureJWT.PureJWTError(
-        `Cannot infer algorithm from privateKey.`,
+        `Cannot infer algorithm from publicKey.`,
         500,
-        err
       );
     }
   }
@@ -277,7 +275,7 @@ class PureJWT {
 
       return { header, payload };
     } catch (err) {
-      throw new PureJWT.PureJWTError("Token cannot be parsed.", 400, err);
+      throw new PureJWT.PureJWTError("Token cannot be parsed.", 400);
     }
   }
 
@@ -469,12 +467,11 @@ class PureJWT {
 
   // Define the custom error type
   static PureJWTError = class extends Error {
-    constructor(message, statusCode, original_error) {
+    constructor(message, statusCode) {
       super(message);
       this.name = "PureJWTError";
       this.message = message;
       this.statusCode = statusCode; // Recommended status code
-      this.original_error = original_error;
     }
   };
 

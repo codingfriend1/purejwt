@@ -36,7 +36,7 @@ npm install --save purejwt
 - Encoding, decoding, signing, and verification of JWTs.
 - Automatic algorithm detection based on the provided keys.
 - Control over token expiration.
-- Flexibility in setting acceptable issuers and audiences for token verification.
+- Flexibility in setting allowed issuers and audiences for token verification.
 - A custom error type, `PureJWT.PureJWTError`, for precise error handling.
 
 ## Quick Start Guide
@@ -70,15 +70,15 @@ const jwt = new PureJWT({
 });
 ```
 
-During initialization, you can specify options such as token lifespan, and acceptable issuers and audiences. These settings influence which tokens are accepted by PureJWT during verification.
+During initialization, you can specify options such as token lifespan, and allowed issuers and audiences. These settings influence which tokens are accepted by PureJWT during verification.
 
 ```javascript
 const jwt = new PureJWT({
   secret: process.env.SECRET,
   algorithm: "HS384", // Default algorithm is HS256.
   durationInMinutes: 7 * 24 * 60, // Default token lifespan is 24 hours
-  acceptableIssuers: "securetoken.hostluxe.com", // Can also be an array of strings
-  acceptableAudiences: [
+  allowedIssuers: "securetoken.hostluxe.com", // Can also be an array of strings
+  allowedAudiences: [
     "microservice.hostluxe.com",
     "premiumservice.hostluxe.com",
   ], // Can also be a string

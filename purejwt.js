@@ -9,16 +9,16 @@ class PureJWT {
     privateKey,
     publicKey,
     secret,
-    acceptableIssuers = "",
-    acceptableAudiences = "",
+    allowedIssuers = "",
+    allowedAudiences = "",
     durationInMinutes = 24 * 60,
   }) {
     // Initialize variables
     this.secret = secret;
     this.privateKey = privateKey;
     this.publicKey = publicKey;
-    this.acceptableIssuers = acceptableIssuers;
-    this.acceptableAudiences = acceptableAudiences;
+    this.allowedIssuers = allowedIssuers;
+    this.allowedAudiences = allowedAudiences;
     this.durationInMinutes = durationInMinutes;
     this.algorithm =
       algorithm ||
@@ -123,7 +123,8 @@ class PureJWT {
 
     const isVerified = this.verifySignature(
       `${headerB64}.${payloadB64}`,
-      signatureB64
+      signatureB64,
+      header.alg || this.algorithm
     );
 
     if (!isVerified) {
@@ -166,14 +167,14 @@ class PureJWT {
       );
     }
 
-    if (!PureJWT.isStringOrArrayOfStrings(this.acceptableAudiences)) {
+    if (!PureJWT.isStringOrArrayOfStrings(this.allowedAudiences)) {
       throw new PureJWT.PureJWTError(
         `'audience' must be a String or an array of Strings.`,
         500
       );
     }
 
-    if (!PureJWT.isStringOrArrayOfStrings(this.acceptableIssuers)) {
+    if (!PureJWT.isStringOrArrayOfStrings(this.allowedIssuers)) {
       throw new PureJWT.PureJWTError(
         `'issuer' must be a String or an array of Strings.`,
         500
@@ -300,18 +301,18 @@ class PureJWT {
    * @param {string} signatureB64 - Encoded signature as Base64
    * @return {boolean} Content matches signature
    */
-  verifySignature(contentB64, signatureB64) {
+  verifySignature(contentB64, signatureB64, alg) {
     const signature = Buffer.from(signatureB64, "base64");
 
-    if (this.algorithm.includes("HS")) {
+    if (alg.includes("HS")) {
       return crypto.timingSafeEqual(this.sign(contentB64), signature);
     } else {
       let key;
       let padding;
 
-      if (this.algorithm.includes("RS")) {
+      if (alg.includes("RS")) {
         key = this.publicKey;
-      } else if (this.algorithm.includes("PS")) {
+      } else if (alg.includes("PS")) {
         key = {
           key: this.publicKey,
           padding: crypto.constants.RSA_PKCS1_PSS_PADDING, // Padding for PS algorithms
@@ -353,8 +354,8 @@ class PureJWT {
     // Check if audiences match
     if (
       payload.aud &&
-      this.acceptableAudiences &&
-      !PureJWT.arraysConincide(payload.aud, this.acceptableAudiences)
+      this.allowedAudiences &&
+      !PureJWT.arraysConincide(payload.aud, this.allowedAudiences)
     ) {
       throw new PureJWT.PureJWTError("Token has an invalid audience", 401);
     }
@@ -362,8 +363,8 @@ class PureJWT {
     // Check if issuers match
     if (
       payload.iss &&
-      this.acceptableIssuers &&
-      !PureJWT.arraysConincide(payload.iss, this.acceptableIssuers)
+      this.allowedIssuers &&
+      !PureJWT.arraysConincide(payload.iss, this.allowedIssuers)
     ) {
       throw new PureJWT.PureJWTError("Token issuer is invalid", 401);
     }
@@ -372,7 +373,7 @@ class PureJWT {
   // Verifies token's claims
   static preverifyClaims(payload) {
     // Type checking
-    if (payload.iat && typeof payload.iat !== "number") {
+    if (payload.iat && !Number.isInteger(payload.iat)) {
       throw new PureJWT.PureJWTError(`'iat' must be a Number.`, 500);
     }
 
@@ -383,7 +384,7 @@ class PureJWT {
     }
 
     if (payload.exp) {
-      if (typeof payload.exp !== "number") {
+      if (!Number.isInteger(payload.exp)) {
         throw new PureJWT.PureJWTError(`'exp' must be a Number.`, 500);
       } else {
         payload.exp = PureJWT.getSeconds(payload.exp);
@@ -391,7 +392,7 @@ class PureJWT {
     }
 
     if (payload.nbf && typeof payload.nbf !== "number") {
-      if (typeof payload.exp !== "number") {
+      if (!Number.isInteger(payload.nbf)) {
         throw new PureJWT.PureJWTError(`'nbf' must be a Number.`, 500);
       } else {
         payload.nbf = PureJWT.getSeconds(payload.nbf);

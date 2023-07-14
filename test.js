@@ -8,6 +8,8 @@ const chai = require("chai");
 const crypto = require("crypto");
 const PureJWT = require("./purejwt.js");
 
+const FastJWT = require("fast-jwt");
+
 const assert = chai.assert;
 
 function tamperWithToken(originalToken) {
@@ -36,7 +38,7 @@ describe("PureJWT Instantiation", function () {
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
     });
   });
 
@@ -149,7 +151,7 @@ describe(`PureJWT Core Functionality`, function () {
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
     });
   });
 
@@ -306,7 +308,7 @@ describe(`PureJWT Core Functionality`, function () {
     const jwt2 = new PureJWT({
       secret:
         "7a9a66475c4d177392bd8aa4cc1f9145f494d6b2939f9b2c36687e4794ec91e5",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
     });
 
     assert.equal(jwt2.algorithm, "HS256");
@@ -330,14 +332,138 @@ describe(`PureJWT Core Functionality`, function () {
   });
 });
 
+describe(`Third Party Compatibility`, function () {
+  const bitsToModulus = {
+    256: 2048,
+    384: 3072,
+    512: 4096,
+  };
+
+  const bitsToCurves = {
+    256: "prime256v1",
+    384: "secp384r1",
+    512: "secp521r1",
+  };
+
+  for (const type of ["HS", "ES", "RS", "PS"]) {
+    for (const bits of ["256", "384", "512"]) {
+      const algorithm = `${type}${bits}`;
+
+      if (type === "HS") {
+        const secret = PureJWT.generateSecret();
+
+        it(`${algorithm} - should correcty verify tokens created by 'fast-jwt'`, function () {
+          const signSync = FastJWT.createSigner({
+            key: secret,
+            algorithm,
+          });
+
+          const keyJWT = new PureJWT({
+            algorithm,
+            secret,
+          });
+
+          const payload = {
+            sub: "d2bb6a8d",
+            iat: PureJWT.getSeconds(Date.now()),
+          };
+
+          const signature = signSync(payload);
+
+          const returnedPayload = keyJWT.verifyToken(signature);
+
+          assert.deepEqual(payload, returnedPayload);
+        });
+        it(`${algorithm} - should correcty sign tokens for 'fast-jwt'`, function () {
+          const keyJWT = new PureJWT({
+            algorithm,
+            secret,
+          });
+
+          const payload = {
+            sub: "d2bb6a8d",
+            iat: PureJWT.getSeconds(Date.now()),
+          };
+
+          const token = keyJWT.createToken(payload);
+
+          const decode = FastJWT.createDecoder();
+          const returnedPayload = decode(token);
+
+          assert.deepEqual(returnedPayload, payload);
+        });
+      } else {
+        let privateKey, publicKey;
+        if (type === "RS" || type === "PS") {
+          const modulusLength = bitsToModulus[bits];
+          ({ privateKey, publicKey } = PureJWT.generatePublicPrivateKeys(
+            "rsa",
+            {
+              modulusLength,
+            }
+          ));
+        } else if (type === "ES") {
+          const namedCurve = bitsToCurves[bits];
+          ({ privateKey, publicKey } = PureJWT.generatePublicPrivateKeys("ec", {
+            namedCurve,
+          }));
+        }
+
+        it(`${algorithm} - should correcty verify tokens created by 'fast-jwt'`, function () {
+          const signSync = FastJWT.createSigner({
+            key: privateKey,
+            algorithm,
+          });
+
+          const keyJWT = new PureJWT({
+            privateKey,
+            publicKey,
+          });
+
+          const payload = {
+            sub: "d2bb6a8d",
+            iat: PureJWT.getSeconds(Date.now()),
+          };
+
+          const signature = signSync(payload);
+
+          const returnedPayload = keyJWT.verifyToken(signature);
+
+          assert.deepEqual(payload, returnedPayload);
+        });
+        it(`${algorithm} - should correcty sign tokens for 'fast-jwt'`, function () {
+          const secret = PureJWT.generateSecret();
+
+          const keyJWT = new PureJWT({
+            privateKey,
+            publicKey,
+          });
+
+          const payload = {
+            sub: "d2bb6a8d",
+            iat: PureJWT.getSeconds(Date.now()),
+          };
+
+          const token = keyJWT.createToken(payload);
+
+          const decode = FastJWT.createDecoder();
+          const returnedPayload = decode(token);
+
+          assert.deepEqual(returnedPayload, payload);
+        });
+      }
+    }
+  }
+});
+
 describe(`'nbf' (Not Before) Claims`, function () {
   let jwt;
 
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      acceptableAudiences: "https://microservice.myenterprisesolution.com",
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedAudiences: "https://microservice.myenterprisesolution.com",
     });
   });
 
@@ -382,8 +508,8 @@ describe(`'iss' (Issuer) claims`, function () {
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      acceptableAudiences: "https://microservice.myenterprisesolution.com",
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedAudiences: "https://microservice.myenterprisesolution.com",
     });
   });
 
@@ -450,10 +576,10 @@ describe(`'iss' (Issuer) claims`, function () {
     assert.equal(returnedPayload.iss, payload.iss);
   });
 
-  it(`should accept one of many valid 'acceptableIssuers'`, function () {
+  it(`should accept one of many valid 'allowedIssuers'`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: [
+      allowedIssuers: [
         `https://securetoken.hostluxe.com/project/581753`,
         "https://client.myretailapp.com",
       ],
@@ -468,7 +594,7 @@ describe(`'iss' (Issuer) claims`, function () {
   it(`should accept one of many valid 'iss'`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: "https://client.myretailapp.com",
+      allowedIssuers: "https://client.myretailapp.com",
     });
 
     const payload = {
@@ -480,10 +606,10 @@ describe(`'iss' (Issuer) claims`, function () {
     assert.deepEqual(returnedPayload.iss, payload.iss);
   });
 
-  it(`should accept a token with a 'iss' and 'acceptableIssuers' overlap`, function () {
+  it(`should accept a token with a 'iss' and 'allowedIssuers' overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: [
+      allowedIssuers: [
         `https://securetoken.hostluxe.com/project/581753`,
         "https://client.myretailapp.com",
       ],
@@ -498,10 +624,10 @@ describe(`'iss' (Issuer) claims`, function () {
     assert.deepEqual(returnedPayload.iss, payload.iss);
   });
 
-  it(`should reject a token without a 'iss' and 'acceptableIssuers' overlap`, function () {
+  it(`should reject a token without a 'iss' and 'allowedIssuers' overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: [
+      allowedIssuers: [
         `https://securetoken.hostluxe.com/project/581753`,
         "https://client.myretailapp.com",
       ],
@@ -534,7 +660,7 @@ describe(`'iss' (Issuer) claims`, function () {
     }
   });
 
-  it(`should accept any 'iss' when no 'acceptableIssuers' is specified in options`, function () {
+  it(`should accept any 'iss' when no 'allowedIssuers' is specified in options`, function () {
     const jwt2 = new PureJWT({
       secret: "hello",
     });
@@ -555,8 +681,8 @@ describe(`'aud' (Audience) claims`, function () {
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      acceptableAudiences: "https://microservice.myenterprisesolution.com",
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedAudiences: "https://microservice.myenterprisesolution.com",
     });
   });
 
@@ -635,10 +761,10 @@ describe(`'aud' (Audience) claims`, function () {
     }
   });
 
-  it(`should accept one of many valid 'acceptableAudiences'`, function () {
+  it(`should accept one of many valid 'allowedAudiences'`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableAudiences: ["premium-api", "basic-api"],
+      allowedAudiences: ["premium-api", "basic-api"],
     });
 
     const payload = { sub: "d2bb6a8d", aud: "basic-api" };
@@ -650,7 +776,7 @@ describe(`'aud' (Audience) claims`, function () {
   it(`should accept one of many valid 'aud'`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableAudiences: "basic-api",
+      allowedAudiences: "basic-api",
     });
 
     const payload = { sub: "d2bb6a8d", aud: ["basic-api", "mid-tier-api"] };
@@ -659,10 +785,10 @@ describe(`'aud' (Audience) claims`, function () {
     assert.deepEqual(returnedPayload.aud, payload.aud);
   });
 
-  it(`should accept a token with a 'aud' and 'acceptableAudiences' overlap`, function () {
+  it(`should accept a token with a 'aud' and 'allowedAudiences' overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableAudiences: ["premium-api", "basic-api"],
+      allowedAudiences: ["premium-api", "basic-api"],
     });
 
     const payload = { sub: "d2bb6a8d", aud: ["basic-api", "mid-tier-api"] };
@@ -671,10 +797,10 @@ describe(`'aud' (Audience) claims`, function () {
     assert.deepEqual(returnedPayload.aud, payload.aud);
   });
 
-  it(`should reject a token without a 'aud' and 'acceptableAudiences' overlap`, function () {
+  it(`should reject a token without a 'aud' and 'allowedAudiences' overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableAudiences: ["premium-api", "basic-api"],
+      allowedAudiences: ["premium-api", "basic-api"],
     });
 
     const payload = {
@@ -691,7 +817,7 @@ describe(`'aud' (Audience) claims`, function () {
     }
   });
 
-  it(`should accept any 'aud' when no 'acceptableAudiences' is specified in options`, function () {
+  it(`should accept any 'aud' when no 'allowedAudiences' is specified in options`, function () {
     const jwt2 = new PureJWT({
       secret: "hello",
     });
@@ -712,8 +838,8 @@ describe(`'iat' (Issued At) Claims`, function () {
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      acceptableAudiences: "https://microservice.myenterprisesolution.com",
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedAudiences: "https://microservice.myenterprisesolution.com",
     });
   });
 
@@ -786,7 +912,7 @@ describe(`'iat' (Issued At) Claims`, function () {
   it(`should refuse a token past it's issue duration`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
       durationInMinutes: -1,
     });
 
@@ -808,8 +934,8 @@ describe(`'exp' (Expiration) Claims`, function () {
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      acceptableIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      acceptableAudiences: "https://microservice.myenterprisesolution.com",
+      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
+      allowedAudiences: "https://microservice.myenterprisesolution.com",
     });
   });
 
@@ -901,7 +1027,7 @@ describe("RSA PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
     const payload = { sub: "1234567890", name: "John Doe" };
     const token = jwt2.createToken(payload);
@@ -915,7 +1041,7 @@ describe("RSA PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
 
     const payload = { sub: "1234567890", name: "John Doe", iss: "myapp" };
@@ -938,7 +1064,7 @@ describe("RSA PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
 
     // Create the token with original payload
@@ -997,7 +1123,7 @@ describe("ES PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
     const payload = { sub: "1234567890", name: "John Doe" };
     const token = jwt2.createToken(payload);
@@ -1013,7 +1139,7 @@ describe("ES PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
     const payload = { sub: "1234567890", name: "John Doe", iss: "myapp" };
     const token = jwt2.createToken(payload);
@@ -1036,7 +1162,7 @@ describe("ES PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
 
     // Create the token with original payload
@@ -1095,7 +1221,7 @@ describe("PS PureJWT", function () {
       privateKey,
       publicKey,
       algorithm: "PS256",
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
     const payload = { sub: "1234567890", name: "John Doe" };
     const token = jwt2.createToken(payload);
@@ -1110,7 +1236,7 @@ describe("PS PureJWT", function () {
       privateKey,
       publicKey,
       algorithm: "PS256",
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
     const payload = { sub: "1234567890", name: "John Doe", iss: "myapp" };
     const token = jwt2.createToken(payload);
@@ -1132,7 +1258,7 @@ describe("PS PureJWT", function () {
       privateKey,
       publicKey,
       algorithm: "PS256",
-      acceptableIssuers: "myapp",
+      allowedIssuers: "myapp",
     });
 
     // Create the token with original payload

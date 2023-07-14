@@ -53,7 +53,7 @@ class PureJWT {
 
   /**
    * Generate public and private keys using crypto
-   * @param {string} algorithm - The algorithm to use (rsa | ec)
+   * @param {string} algorithm - The algorithm to use (rsa | ec | rsa-pss)
    * @param {Object} options - The options for the key generation
    * @param {number} options.modulusLength - The length of the modulus
    * @param {string} options.namedCurve - The name of the curve to use
@@ -66,17 +66,19 @@ class PureJWT {
       if (algorithm === "ec")
         options.namedCurve = options.namedCurve || "prime256v1";
 
+      options.privateKeyEncoding = options.privateKeyEncoding || { type: "pkcs8", format: "pem" }
+      options.publicKeyEncoding = options.publicKeyEncoding || { type: "spki", format: "pem" }
+
       let { privateKey, publicKey } = crypto.generateKeyPairSync(
         algorithm,
         options
       );
 
-      privateKey = privateKey.export({ type: "pkcs8", format: "pem" });
-      publicKey = publicKey.export({ type: "spki", format: "pem" })
-
       if(singleLine) {
-        privateKey = privateKey.replace(/\n/g, "\\n")
-        publicKey = publicKey.replace(/\n/g, "\\n")
+        return {
+          privateKey: privateKey.replace(/\n/g, "\\n"),
+          publicKey: publicKey.replace(/\n/g, "\\n")
+        }
       }
       
 

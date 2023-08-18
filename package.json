@@ -1,6 +1,6 @@
 {
   "name": "purejwt",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "PureJWT is a lightweight, standalone library for JSON Web Token (JWT) creation, verification, and manipulation. Designed with ease-of-use and security in mind, it removes reliance on third-party libraries, granting developers increased control and transparency over their web token operations. From generating public-private keys to verifying token signatures, PureJWT handles it all in a minimal, straightforward manner.",
   "main": "purejwt.js",
   "scripts": {

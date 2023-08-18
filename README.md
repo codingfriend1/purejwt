@@ -137,7 +137,7 @@ With this setup, you can securely verify tokens using the provided publicKey but
 - **PureJWT.generatePublicPrivateKeys(algorithm, options, singleLine)**: Produces private and public keys for RSA, RSA-PSS, and ECDSA algorithms. The boolean `singleLine` replaces newline characters allowing the key String to fit in a JSON file.
   - With the **'rsa'** algorithm, **options.modulusLength** values of **2048**, **3072**, and **4096** match **256**, **384**, and **512** bit lengths respectively.
   - With the **'ec'** algorithm, **options.namedCurve** values of **'prime256v1'**, **'secp384r1'**, and **'secp521r1'** match **ES256**, **ES384**, and **ES512** respectively.
-- **PureJWT.extractJwtFromBearer(tokenWithPrefix)**: Retrieves the JWT token from a bearer, basic, or digest authentication scheme.
+- **PureJWT.extractJwtFromBearer(tokenWithPrefix)**: Retrieves the JWT token from a bearer, basic, jwt, or digest authentication scheme.
 - **PureJWTError**: A unique error class featuring a message and statusCode.
 
 ## Example

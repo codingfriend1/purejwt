@@ -658,9 +658,7 @@ describe(`'nbf' (Not Before) Claims`, function () {
 
   beforeEach(function () {
     jwt = new PureJWT({
-      secret: "7a9a66475c4d177",
-      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      allowedAudiences: "https://microservice.myenterprisesolution.com",
+      secret: "7a9a66475c4d177"
     });
   });
 
@@ -706,7 +704,6 @@ describe(`'iss' (Issuer) claims`, function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
       allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      allowedAudiences: "https://microservice.myenterprisesolution.com",
     });
   });
 
@@ -870,6 +867,27 @@ describe(`'iss' (Issuer) claims`, function () {
 
     assert.equal(returnedPayload.iss, "some-issuer");
   });
+
+  it(`should refuse token when 'iss' is unspecified and 'allowedIssuers' is set`, function () {
+    const jwt2 = new PureJWT({
+      secret: "hello",
+      allowedIssuers: [
+        'https://chat.myenterprisesolution.com'
+      ]
+    });
+
+    const payload = { sub: "d2bb6a8d" };
+
+    const token = jwt2.createToken(payload);
+
+    try {
+      const returnedPayload = jwt2.verifyToken(token);
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(err.message, "Token issuer is invalid");
+    }
+  });
 });
 
 describe(`'aud' (Audience) claims`, function () {
@@ -878,7 +896,6 @@ describe(`'aud' (Audience) claims`, function () {
   beforeEach(function () {
     jwt = new PureJWT({
       secret: "7a9a66475c4d177",
-      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
       allowedAudiences: "https://microservice.myenterprisesolution.com",
     });
   });
@@ -967,7 +984,7 @@ describe(`'aud' (Audience) claims`, function () {
     const payload = { sub: "d2bb6a8d", aud: "basic-api" };
     const token = jwt2.createToken(payload);
     const returnedPayload = jwt2.verifyToken(token);
-    assert.equal(returnedPayload.iss, payload.iss);
+    assert.equal(returnedPayload.aud, payload.aud);
   });
 
   it(`should accept one of many valid 'aud'`, function () {
@@ -1027,6 +1044,27 @@ describe(`'aud' (Audience) claims`, function () {
 
     assert.equal(returnedPayload.aud, "some-issuer");
   });
+
+  it(`should refuse token when 'aud' is unspecified and 'allowedAudiences' is set`, function () {
+    const jwt2 = new PureJWT({
+      secret: "hello",
+      allowedAudiences: [
+        'premium-api'
+      ]
+    });
+
+    const payload = { sub: "d2bb6a8d" };
+
+    const token = jwt2.createToken(payload);
+
+    try {
+      const returnedPayload = jwt2.verifyToken(token);
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(err.message, "Token has an invalid audience");
+    }
+  });
 });
 
 describe(`'iat' (Issued At) Claims`, function () {
@@ -1034,9 +1072,7 @@ describe(`'iat' (Issued At) Claims`, function () {
 
   beforeEach(function () {
     jwt = new PureJWT({
-      secret: "7a9a66475c4d177",
-      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      allowedAudiences: "https://microservice.myenterprisesolution.com",
+      secret: "7a9a66475c4d177"
     });
   });
 
@@ -1109,7 +1145,6 @@ describe(`'iat' (Issued At) Claims`, function () {
   it(`should refuse a token past it's issue duration`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
-      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
       durationInMinutes: -1,
     });
 
@@ -1130,9 +1165,7 @@ describe(`'exp' (Expiration) Claims`, function () {
 
   beforeEach(function () {
     jwt = new PureJWT({
-      secret: "7a9a66475c4d177",
-      allowedIssuers: `https://securetoken.hostluxe.com/project/581753`,
-      allowedAudiences: "https://microservice.myenterprisesolution.com",
+      secret: "7a9a66475c4d177"
     });
   });
 

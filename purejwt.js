@@ -370,18 +370,16 @@ class PureJWT {
 
     // Check if audiences match
     if (
-      payload.aud &&
       this.allowedAudiences &&
-      !PureJWT.arraysConincide(payload.aud, this.allowedAudiences)
+      !PureJWT.arraysConincide(payload.aud || '', this.allowedAudiences)
     ) {
       throw new PureJWT.PureJWTError("Token has an invalid audience", 401);
     }
 
     // Check if issuers match
     if (
-      payload.iss &&
       this.allowedIssuers &&
-      !PureJWT.arraysConincide(payload.iss, this.allowedIssuers)
+      !PureJWT.arraysConincide(payload.iss || '', this.allowedIssuers)
     ) {
       throw new PureJWT.PureJWTError("Token issuer is invalid", 401);
     }

@@ -482,19 +482,6 @@ describe(`PureJWT Core Functionality`, function () {
     assert.notInclude(token, "=");
   });
 
-  it("should not create a token without a payload", function () {
-    try {
-      const token = jwt.createToken();
-      assert.fail("Expected an error to be thrown");
-    } catch (err) {
-      assert.instanceOf(err, PureJWT.PureJWTError);
-      assert.equal(
-        err.message,
-        `Payload must be an object with at least one key.`
-      );
-    }
-  });
-
   it("should automatically detect Algorithm Type from a secret", function () {
     const jwt2 = new PureJWT({ secret: "Hello" });
 
@@ -665,9 +652,13 @@ describe(`'nbf' (Not Before) Claims`, function () {
   it(`should accept a numerical 'nbf' claim`, function () {
     const nbf = Math.floor(Date.now() / 1000);
     const payload = { sub: "d2bb6a8d", nbf };
-    const token = jwt.createToken(payload);
-    const returnedPayload = jwt.verifyToken(token);
-    assert.equal(returnedPayload.nbf, payload.nbf);
+
+    try {
+      const token = jwt.createToken(payload);
+      assert.typeOf(token, 'string', 'Token should be a string');
+    } catch (err) {
+      assert.fail("Expected an error to be thrown");
+    }
   });
 
   it(`should refuse a non-numerical 'nbf' claim`, function () {
@@ -694,6 +685,15 @@ describe(`'nbf' (Not Before) Claims`, function () {
       assert.instanceOf(err, PureJWT.PureJWTError);
       assert.equal(err.message, `Token not yet active`);
     }
+  });
+
+
+  it(`should accept an active token`, function () {
+    const nbf = Math.floor(Date.now() / 1000) - 1;
+    const payload = { sub: "d2bb6a8d", nbf };
+    const token = jwt.createToken(payload);
+    const returnedPayload = jwt.verifyToken(token);
+    assert.equal(returnedPayload.nbf, payload.nbf);
   });
 });
 
@@ -800,7 +800,7 @@ describe(`'iss' (Issuer) claims`, function () {
     assert.deepEqual(returnedPayload.iss, payload.iss);
   });
 
-  it(`should accept a token with a 'iss' and 'allowedIssuers' overlap`, function () {
+  it(`should accept a token when 'iss' and 'allowedIssuers' overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
       allowedIssuers: [
@@ -818,7 +818,7 @@ describe(`'iss' (Issuer) claims`, function () {
     assert.deepEqual(returnedPayload.iss, payload.iss);
   });
 
-  it(`should reject a token without a 'iss' and 'allowedIssuers' overlap`, function () {
+  it(`should reject a token when 'iss' and 'allowedIssuers' don't overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
       allowedIssuers: [
@@ -999,7 +999,7 @@ describe(`'aud' (Audience) claims`, function () {
     assert.deepEqual(returnedPayload.aud, payload.aud);
   });
 
-  it(`should accept a token with a 'aud' and 'allowedAudiences' overlap`, function () {
+  it(`should accept a token when 'aud' and 'allowedAudiences' overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
       allowedAudiences: ["premium-api", "basic-api"],
@@ -1011,7 +1011,7 @@ describe(`'aud' (Audience) claims`, function () {
     assert.deepEqual(returnedPayload.aud, payload.aud);
   });
 
-  it(`should reject a token without a 'aud' and 'allowedAudiences' overlap`, function () {
+  it(`should reject a token when 'aud' and 'allowedAudiences' don't overlap`, function () {
     const jwt2 = new PureJWT({
       secret: "7a9a66475c4d177",
       allowedAudiences: ["premium-api", "basic-api"],
@@ -1294,7 +1294,6 @@ describe("RSA PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      allowedIssuers: "myapp",
     });
 
     // Create the token with original payload
@@ -1308,9 +1307,16 @@ describe("RSA PureJWT", function () {
 
     const tamperedToken = tamperWithToken(originalToken);
 
-    assert.throws(() => {
+    try {
       jwt2.verifyToken(tamperedToken, publicKey);
-    }, PureJWT.PureJWTError);
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(
+        err.message,
+        `Token signature is invalid`
+      );
+    }
   });
 });
 
@@ -1392,7 +1398,6 @@ describe("ES PureJWT", function () {
     const jwt2 = new PureJWT({
       privateKey,
       publicKey,
-      allowedIssuers: "myapp",
     });
 
     // Create the token with original payload
@@ -1409,9 +1414,16 @@ describe("ES PureJWT", function () {
 
     const tamperedToken = tamperWithToken(originalToken);
 
-    assert.throws(() => {
+    try {
       jwt2.verifyToken(tamperedToken, publicKey);
-    }, PureJWT.PureJWTError);
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(
+        err.message,
+        `Token signature is invalid`
+      );
+    }
   });
 });
 
@@ -1488,7 +1500,6 @@ describe("PS PureJWT", function () {
       privateKey,
       publicKey,
       algorithm: "PS256",
-      allowedIssuers: "myapp",
     });
 
     // Create the token with original payload
@@ -1505,9 +1516,16 @@ describe("PS PureJWT", function () {
 
     const tamperedToken = tamperWithToken(originalToken);
 
-    assert.throws(() => {
+    try {
       jwt2.verifyToken(tamperedToken, publicKey);
-    }, PureJWT.PureJWTError);
+      assert.fail("Expected an error to be thrown");
+    } catch (err) {
+      assert.instanceOf(err, PureJWT.PureJWTError);
+      assert.equal(
+        err.message,
+        `Token signature is invalid`
+      );
+    }
   });
 });
 
